@@ -27,5 +27,5 @@ protobuf>=3.20.0
 
 # For CheXagent streaming (threading is built into Python)
 
-# Optional but recommended for better performance
-flash-attn>=2.0.0; sys_platform != "darwin"  # Skip on macOS due to compatibility issues
+# Optional: flash-attn for better performance (commented out due to installation complexity)
+# flash-attn>=2.0.0
