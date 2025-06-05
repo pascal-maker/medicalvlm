@@ -1,11 +1,10 @@
 # Core ML/AI frameworks
 torch>=2.0.0
-torchvision>=0.15.0
-numpy>=1.21.0
-pillow>=9.0.0
+numpy>=1.24.0
+Pillow>=9.0.0
 
 # Transformers and related
-transformers>=4.40.0
+transformers>=4.36.0
 accelerate>=0.20.0
 qwen-vl-utils>=0.0.8
 
@@ -21,7 +20,7 @@ omegaconf>=2.3.0
 # Additional utilities
 safetensors>=0.3.0
 tokenizers>=0.13.0
-huggingface-hub>=0.16.0
+huggingface-hub>=0.19.0
 sentencepiece>=0.1.99
 protobuf>=3.20.0
 
