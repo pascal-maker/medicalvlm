@@ -1,17 +1,3 @@
----
-title: Medical Vlm Sam2
-emoji: 📉
-colorFrom: blue
-colorTo: gray
-sdk: gradio
-sdk_version: 5.32.1
-app_file: app.py
-pinned: false
-short_description: All-in-one medical imaging demo
----
-
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
-
 # Medical VLM with SAM-2 and CheXagent
 
 A comprehensive medical imaging analysis tool that combines:
@@ -30,8 +16,8 @@ A comprehensive medical imaging analysis tool that combines:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/medical-vlm-sam2.git
-cd medical-vlm-sam2
+git clone https://github.com/pascal-maker/medicalvlm.git
+cd medicalvlm
 ```
 
 2. Create and activate a virtual environment:
