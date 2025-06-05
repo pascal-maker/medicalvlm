@@ -1,7 +1,7 @@
 # Core ML/AI frameworks
-torch>=2.0.0
+torch>=2.7.1
 numpy>=1.24.0
-Pillow>=9.0.0
+Pillow>=10.3.0
 
 # Transformers and related
 transformers>=4.36.0
@@ -28,3 +28,7 @@ protobuf>=3.20.0
 
 # Optional: flash-attn for better performance (commented out due to installation complexity)
 # flash-attn>=2.0.0
+fonttools>=4.43.0 # not directly required, pinned by Snyk to avoid a vulnerability
+setuptools>=78.1.1 # not directly required, pinned by Snyk to avoid a vulnerability
+wheel>=0.38.0 # not directly required, pinned by Snyk to avoid a vulnerability
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
