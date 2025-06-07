@@ -41,36 +41,48 @@ import gradio as gr
 def check_and_install_sam2():
     """Check if SAM-2 is available and attempt installation if needed."""
     try:
-        # Try importing SAM-2
+        print("[SAM-2 Debug] Attempting to import SAM-2 modules...")
         from sam2.build_sam import build_sam2
         from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
+        print("[SAM-2 Debug] Successfully imported SAM-2 modules")
         return True, "SAM-2 already available"
-    except ImportError:
-        print("SAM-2 not found. Attempting to install...")
+    except ImportError as e:
+        print(f"[SAM-2 Debug] Import error: {str(e)}")
+        print("[SAM-2 Debug] Attempting to install SAM-2...")
         try:
             # Clone SAM-2 repository
             if not os.path.exists("segment-anything-2"):
+                print("[SAM-2 Debug] Cloning SAM-2 repository...")
                 subprocess.run([
                     "git", "clone", 
                     "https://github.com/facebookresearch/segment-anything-2.git"
                 ], check=True)
+                print("[SAM-2 Debug] Repository cloned successfully")
             
             # Install SAM-2
+            print("[SAM-2 Debug] Installing SAM-2...")
             original_dir = os.getcwd()
             os.chdir("segment-anything-2")
             subprocess.run([sys.executable, "-m", "pip", "install", "-e", "."], check=True)
             os.chdir(original_dir)
+            print("[SAM-2 Debug] Installation completed")
             
             # Add to Python path
-            sys.path.insert(0, os.path.abspath("segment-anything-2"))
+            sam2_path = os.path.abspath("segment-anything-2")
+            if sam2_path not in sys.path:
+                sys.path.insert(0, sam2_path)
+                print(f"[SAM-2 Debug] Added {sam2_path} to Python path")
             
             # Try importing again
+            print("[SAM-2 Debug] Attempting to import SAM-2 modules again...")
             from sam2.build_sam import build_sam2
             from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
+            print("[SAM-2 Debug] Successfully imported SAM-2 modules after installation")
             return True, "SAM-2 installed successfully"
             
         except Exception as e:
-            print(f"Failed to install SAM-2: {e}")
+            print(f"[SAM-2 Debug] Installation failed: {str(e)}")
+            print(f"[SAM-2 Debug] Error type: {type(e).__name__}")
             return False, f"SAM-2 installation failed: {e}"
 
 # Check SAM-2 availability
@@ -85,7 +97,6 @@ if SAM2_AVAILABLE:
         from sam2.build_sam import build_sam2
         from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
         from sam2.modeling.sam2_base import SAM2Base
-        from sam2.utils.misc import get_device_index
     except ImportError as e:
         print(f"SAM-2 import error: {e}")
         SAM2_AVAILABLE = False
@@ -183,75 +194,48 @@ class MedicalVLMAgent:
         return self.processor.decode(trimmed, skip_special_tokens=True).strip()
 
 # =============================================================================
-# SAM-2 model + AutomaticMaskGenerator (conditional)
+# SAM-2 model + AutomaticMaskGenerator (final minimal version)
 # =============================================================================
-def download_sam2_checkpoint():
-    """Download SAM-2 checkpoint if not present."""
-    checkpoint_dir = "checkpoints"
-    checkpoint_file = "sam2.1_hiera_large.pt"
-    checkpoint_path = os.path.join(checkpoint_dir, checkpoint_file)
-    
-    if not os.path.exists(checkpoint_path):
-        os.makedirs(checkpoint_dir, exist_ok=True)
-        print("Downloading SAM-2 checkpoint...")
-        try:
-            import urllib.request
-            url = "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt"
-            urllib.request.urlretrieve(url, checkpoint_path)
-            print("SAM-2 checkpoint downloaded successfully")
-        except Exception as e:
-            print(f"Failed to download SAM-2 checkpoint: {e}")
-            return None
-    
-    return checkpoint_path
+import os
+import numpy as np
+from PIL import Image, ImageDraw
+from sam2.build_sam import build_sam2
+from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
 
 def initialize_sam2():
-    """Initialize SAM-2 model and mask generator."""
-    if not SAM2_AVAILABLE:
-        return None, None
-    
-    try:
-        # Download checkpoint if needed
-        checkpoint_path = download_sam2_checkpoint()
-        if checkpoint_path is None:
-            return None, None
-        
-        # Config path (you may need to adjust this)
-        config_path = "segment-anything-2/sam2/configs/sam2.1/sam2.1_hiera_l.yaml"
-        if not os.path.exists(config_path):
-            config_path = "configs/sam2.1/sam2.1_hiera_l.yaml"
-        
-        device = get_device()
-        print(f"[SAM-2] building model on {device}")
+    # These two files are already in your repo
+    CKPT = "checkpoints/sam2.1_hiera_large.pt"   # ≈2.7 GB
+    CFG  = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
-        sam2_model = build_sam2(
-            config_path,
-            checkpoint_path,
-            device=device,
-            apply_postprocessing=False,
-        )
+    # One chdir so Hydra's search path starts inside sam2/sam2/
+    os.chdir("sam2/sam2")
 
-        mask_gen = SAM2AutomaticMaskGenerator(
-            model=sam2_model,
-            points_per_side=32,
-            pred_iou_thresh=0.86,
-            stability_score_thresh=0.92,
-            crop_n_layers=0,
-        )
-        return sam2_model, mask_gen
-    
-    except Exception as e:
-        print(f"[SAM-2] Failed to initialize: {e}")
-        return None, None
+    device = get_device()
+    print(f"[SAM-2] building model on {device}")
 
-# Initialize SAM-2 (conditional)
-_sam2_model, _mask_generator = None, None
-if SAM2_AVAILABLE:
+    sam2_model = build_sam2(
+        CFG,        # relative to sam2/sam2/
+        CKPT,       # relative after chdir
+        device=device,
+        apply_postprocessing=False,
+    )
+
+    mask_gen = SAM2AutomaticMaskGenerator(
+        model=sam2_model,
+        points_per_side=32,
+        pred_iou_thresh=0.86,
+        stability_score_thresh=0.92,
+        crop_n_layers=0,
+    )
+    return sam2_model, mask_gen
+
+# ---------------------- build once ----------------------
+try:
     _sam2_model, _mask_generator = initialize_sam2()
-    if _sam2_model is not None:
-        print("[SAM-2] Successfully initialized!")
-    else:
-        print("[SAM-2] Initialization failed")
+    print("[SAM-2] Successfully initialized!")
+except Exception as e:
+    print(f"[SAM-2] Failed to initialize: {e}")
+    _sam2_model, _mask_generator = None, None
 
 def automatic_mask_overlay(image_np: np.ndarray) -> np.ndarray:
     """Generate masks and alpha-blend them on top of the original image."""
@@ -274,12 +258,8 @@ def automatic_mask_overlay(image_np: np.ndarray) -> np.ndarray:
     return overlay
 
 def tumor_segmentation_interface(image: Image.Image | None):
-    """Tumor segmentation interface with proper error handling."""
     if image is None:
         return None, "Please upload an image."
-    
-    if not SAM2_AVAILABLE:
-        return None, "SAM-2 is not available. Please check installation."
     
     if _mask_generator is None:
         return None, "SAM-2 not properly initialized. Check the console for errors."
@@ -338,16 +318,34 @@ def simple_segmentation_fallback(image: Image.Image | None):
 # CheXagent set-up
 # =============================================================================
 try:
+    print("[CheXagent] Starting initialization...")
     chex_name = "StanfordAIMI/CheXagent-2-3b"
+    print(f"[CheXagent] Loading tokenizer from {chex_name}")
     chex_tok = AutoTokenizer.from_pretrained(chex_name, trust_remote_code=True)
+    print("[CheXagent] Tokenizer loaded successfully")
+    
+    print("[CheXagent] Loading model...")
     chex_model = AutoModelForCausalLM.from_pretrained(
-        chex_name, device_map="auto", trust_remote_code=True
+        chex_name, 
+        device_map="auto", 
+        trust_remote_code=True,
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
     )
-    chex_model = chex_model.half() if torch.cuda.is_available() else chex_model.float()
+    print("[CheXagent] Model loaded successfully")
+    
+    if torch.cuda.is_available():
+        print("[CheXagent] Converting to half precision for GPU")
+        chex_model = chex_model.half()
+    else:
+        print("[CheXagent] Using full precision for CPU")
+        chex_model = chex_model.float()
+    
     chex_model.eval()
     CHEXAGENT_AVAILABLE = True
+    print("[CheXagent] Initialization complete")
 except Exception as e:
-    print(f"CheXagent not available: {e}")
+    print(f"[CheXagent] Initialization failed: {str(e)}")
+    print(f"[CheXagent] Error type: {type(e).__name__}")
     CHEXAGENT_AVAILABLE = False
     chex_tok, chex_model = None, None
 
