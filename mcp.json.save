@@ -1,0 +1,18 @@
+
+
+{
+    "servers": [
+      {
+        "url": "https://huggingface.co/mcp",
+        "description": "Hugging Face MCP Server",
+        "variables": {
+          "headers": {
+            "Authorization": "Bearer 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"
+          }
+        }
+      }
+    ]
+
+
+
+  }
