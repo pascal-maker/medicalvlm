@@ -8,7 +8,7 @@ accelerate>=0.20.0
 qwen-vl-utils>=0.0.8
 
 # Gradio for web interface
-gradio==5.13.0
+gradio==6.20.0
 
 # SAM-2 dependencies
 opencv-python>=4.8.0
